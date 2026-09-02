@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cilent Website - 欢迎</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .info {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .link-list {
+            list-style: none;
+            padding: 0;
+        }
+        .link-list li {
+            margin: 10px 0;
+        }
+        .link-list a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .link-list a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>欢迎使用 Cilent Website</h1>
+        <div class="info">
+            <p>这是一个本地网站托管程序，可以在 localhost 上快速搭建网站。</p>
+            <p>该程序具有以下特性：</p>
+            <ul>
+                <li>✓ 支持自定义网站端口和下载端口</li>
+                <li>✓ 自动处理 index.html 映射</li>
+                <li>✓ 完整的访问日志记录</li>
+                <li>✓ 支持文件下载服务</li>
+                <li>✓ 一键启动/停止服务</li>
+            </ul>
+        </div>
+        <div class="info">
+            <h3>快速开始</h3>
+            <ol>
+                <li>将你的网页文件放在 <code>index/</code> 文件夹中</li>
+                <li>将需要下载的文件放在 <code>request/download/</code> 文件夹中</li>
+                <li>点击 "启动服务" 按钮</li>
+                <li>在浏览器中访问相应的 localhost 地址</li>
+            </ol>
+        </div>
+        <div class="info">
+            <h3>访问规则</h3>
+            <p><strong>网站访问示例：</strong></p>
+            <ul class="link-list">
+                <li>文件路径: <code>index/hosting/help/index.html</code></li>
+                <li>访问地址: <code>http://localhost:8000/hosting/help</code></li>
+            </ul>
+            <ul class="link-list">
+                <li>文件路径: <code>index/hosting/help/pageone.html</code></li>
+                <li>访问地址: <code>http://localhost:8000/hosting/help/pageone.html</code></li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
