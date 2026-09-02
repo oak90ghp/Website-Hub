@@ -44,35 +44,14 @@ Cilent Website/
 │   └── control/
 └── README.md
 ```
-  - ```Cilent Website```: 程序的根目录
-  - ```Cilent Website\main.py```: 未经封装的主程序文件
-  - ```Cilent Website\index\```: 网站文件夹，所有用户会请求的网页都会在此处
-  - ```Cilent Website\index\index.html```: 实例HTML，可以删除此文件
-  - ```Cilent Website\request\```: 所有客户端可能会请求的文件都在```request```文件夹的子文件夹中，目前有```download```和```control```，我们可能会在之后的更新中添加其他子文件夹，具体参考对应版本的更新日志(```update.md```)
-  - ```Cilent Website\request\download\```: 客户端所有会请求的文件都会存储在此文件夹中，此文件夹中的文件共客户端下载使用
-  - ```Cilent Website\request\control\```: 客户端远程操控的程序存储在此文件夹中，每个程序占用一个子文件夹
-  - ```Cilent Website\README.md```: 本文件，所有版本的Cilent Website中，```README.md```文件均为用户指南
-
-## 使用步骤
-从更新进度来看，正式版 落后 Preview版 落后 调试版。
-- Releases版: Cilent Website 最稳定的版本，所有功能经过测试，但更新速度最慢，一般是经过测试的Preview版本。
-- Preview版: Cilent Website的测试版，经过一定的测试，但可能存在一些问题，通常是预发布版本，但正在进行测试。此版本是新功能已经完全完整且未出现大规模错误的调试版，在Preview版本中再次进行几轮测试后，我们会将最终的Preview版作为Releases版发布。
-- 调试版: 还没有封装的源代码文件，这个版本的功能是最新的，但可能有一些问题需要修复。使用此版本时，需要自行配置Python以及使用命令```python cilent_website.py```运行。
-
-### 方案一：使用Releases/Preview版(推荐)
-#### 1.下载并运行封装后的版本
-您可以在我们的Github仓库(*https://github.com/oak90ghp/Cilent-Website/*)中，下载我们的Releases或Preview版本。下载完成后，请使用**管理员权限**运行主程序。
-#### 2.按照提示操作
-按照带有图形版本的提示操作本产品，并按照后文的**开始配置**进行配置。
-
-### 方案二：使用调试版本
-#### 1.下载Python
-请确保您的电脑中已经安装了Python 3及更高版本的Python，您可以在```cmd.exe```中使用```python --version```命令检查是否已安装Python并查看Python版本。
-#### 2.下载源代码
-完成Python的安装或更新后，请可以在我们的Github仓库(*https://github.com/oak90ghp/Cilent-Website/*)中，下载我们的源代码文件```main.py```和启动文件```start.bat```。
-### 3.启动调试版程序
-完成如上文件的下载后，请问```main.py```和```start.bat```创建一个新的文件夹，并确保此文件夹的路径中没有任何中文字符。完成后，请使用管理员身份运行```start.bat```。如果您更改了```main.py```的文件名，请编辑```start.bat```并同步中的```python main.py```语句；您也可以在不下载```start.py```的情况下运行```main.py```，在确保Python已经安装后，在```main.py```所存在的根目录中打开```cmd.exe```，并输入```python main.py```。如果您的Python版本符合要求，调试版窗口就会启动。
-
+  - ```Website Hub```: 程序的根目录
+  - ```Website Hub\main.py```: 未经封装的主程序文件
+  - ```Website Hub\index\```: 网站文件夹，所有用户会请求的网页都会在此处
+  - ```Website Hub\index\index.html```: 实例HTML，可以删除此文件
+  - ```Website Hub\request\```: 所有客户端可能会请求的文件都在```request```文件夹的子文件夹中，目前有```download```和```control```，我们可能会在之后的更新中添加其他子文件夹，具体参考对应版本的更新日志(```update.md```)
+  - ```Website Hub\request\download\```: 客户端所有会请求的文件都会存储在此文件夹中，此文件夹中的文件共客户端下载使用
+  - ```Website Hub\request\control\```: 客户端远程操控的程序存储在此文件夹中，每个程序占用一个子文件夹
+  - ```Website Hub\README.md```: 本文件，所有版本的Cilent Website中，```README.md```文件均为用户指南
 ## 访问规则详解
 
 ### 规则 1：index.html 自动映射
