@@ -593,17 +593,42 @@ class WebsiteHubApp:
         self.download_port_entry = ttk.Entry(config_frame, textvariable=self.download_port_var, width=10)
         self.download_port_entry.grid(row=1, column=1, sticky=tk.W, padx=5)
 
-        # 操控端口
-        ttk.Label(config_frame, text="操控端口:").grid(row=2, column=0, sticky=tk.W, pady=5)
-        self.control_port_var = tk.StringVar(value="9000")
-        self.control_port_entry = ttk.Entry(config_frame, textvariable=self.control_port_var, width=10)
-        self.control_port_entry.grid(row=2, column=1, sticky=tk.W, padx=5)
+        # 远程控制按钮（点击弹出二级菜单）
+        self.remote_control_button = ttk.Button(config_frame, text="远程控制 ▸", command=self.show_control_menu)
+        self.remote_control_button.grid(row=2, column=0, columnspan=2, sticky=tk.W, pady=(5, 0))
 
-        # 结果端口
-        ttk.Label(config_frame, text="结果端口:").grid(row=3, column=0, sticky=tk.W, pady=5)
+        # 二级菜单：远程控制设置（弹出窗口，初始隐藏）
+        self.control_menu = tk.Toplevel(self.root)
+        self.control_menu.title("远程控制设置")
+        self.control_menu.transient(self.root)
+        self.control_menu.resizable(False, False)
+        self.control_menu.withdraw()
+        self.control_menu.protocol("WM_DELETE_WINDOW", self.hide_control_menu)
+
+        menu_body = ttk.Frame(self.control_menu, padding=10)
+        menu_body.pack(fill=tk.BOTH, expand=True)
+
+        # 开关：是否启用控制端口
+        self.control_enabled_var = tk.BooleanVar(value=True)
+        self.control_enable_check = ttk.Checkbutton(
+            menu_body, text="启用控制端口",
+            variable=self.control_enabled_var, command=self.on_control_enabled_toggle)
+        self.control_enable_check.grid(row=0, column=0, columnspan=2, sticky=tk.W)
+
+        # 控制端口
+        ttk.Label(menu_body, text="控制端口:").grid(row=1, column=0, sticky=tk.W, pady=5)
+        self.control_port_var = tk.StringVar(value="9000")
+        self.control_port_entry = ttk.Entry(menu_body, textvariable=self.control_port_var, width=10)
+        self.control_port_entry.grid(row=1, column=1, sticky=tk.W, padx=5)
+
+        # 回传端口
+        ttk.Label(menu_body, text="回传端口:").grid(row=2, column=0, sticky=tk.W, pady=5)
         self.result_port_var = tk.StringVar(value="5000")
-        self.result_port_entry = ttk.Entry(config_frame, textvariable=self.result_port_var, width=10)
-        self.result_port_entry.grid(row=3, column=1, sticky=tk.W, padx=5)
+        self.result_port_entry = ttk.Entry(menu_body, textvariable=self.result_port_var, width=10)
+        self.result_port_entry.grid(row=2, column=1, sticky=tk.W, padx=5)
+
+        # 关闭按钮
+        ttk.Button(menu_body, text="关闭", command=self.hide_control_menu).grid(row=3, column=0, columnspan=2, pady=(10, 0))
         
         # 目录信息
         info_frame = ttk.LabelFrame(self.root, text="目录信息", padding=10)
@@ -646,17 +671,48 @@ class WebsiteHubApp:
         self.status_text.see(tk.END)
         self.root.update()
     
+    def show_control_menu(self):
+        """显示远程控制二级菜单"""
+        self.control_menu.deiconify()
+        self.control_menu.update_idletasks()
+        x = self.root.winfo_rootx() + 60
+        y = self.root.winfo_rooty() + 90
+        self.control_menu.geometry(f"+{x}+{y}")
+        self.control_menu.lift()
+        self.control_menu.focus_set()
+
+    def hide_control_menu(self):
+        """隐藏远程控制二级菜单"""
+        self.control_menu.withdraw()
+
+    def on_control_enabled_toggle(self):
+        """开关切换时，更新控制端口/回传端口输入框的可用状态"""
+        self._refresh_control_entries()
+
+    def _refresh_control_entries(self):
+        """根据开关与服务运行状态，刷新控制端口/回传端口输入框的可用状态"""
+        enabled = self.control_enabled_var.get() and not self.control_running
+        state = tk.NORMAL if enabled else tk.DISABLED
+        self.control_port_entry.config(state=state)
+        self.result_port_entry.config(state=state)
+
     def start_servers(self):
         """启动服务器"""
         try:
             # 获取端口
             self.website_port = int(self.website_port_var.get())
             self.download_port = int(self.download_port_var.get())
-            self.control_port = int(self.control_port_var.get())
-            self.result_port = int(self.result_port_var.get())
+            control_enabled = self.control_enabled_var.get()
+            if control_enabled:
+                self.control_port = int(self.control_port_var.get())
+                self.result_port = int(self.result_port_var.get())
 
-            if len({self.website_port, self.download_port, self.control_port, self.result_port}) != 4:
-                messagebox.showerror("错误", "网站端口、下载端口、操控端口和结果端口不能相同！")
+            # 校验已启用的端口互不相同
+            ports = [self.website_port, self.download_port]
+            if control_enabled:
+                ports += [self.control_port, self.result_port]
+            if len(set(ports)) != len(ports):
+                messagebox.showerror("错误", "已启用的各端口不能相同！")
                 return
             
             # 启动网站服务器
@@ -679,27 +735,29 @@ class WebsiteHubApp:
             self.download_running = True
             self.log_status(f"✓ 下载服务已启动 (localhost:{self.download_port})")
 
-            # 启动操控服务器
-            ControlRequestHandler.access_logger = self.access_logger
-            ControlRequestHandler.control_dir = self.control_dir
-            ControlRequestHandler.result_store = self.result_store
-            ControlRequestHandler.result_port = self.result_port
+            # 启动操控服务器与结果服务器（仅当启用控制端口时）
+            if control_enabled:
+                ControlRequestHandler.access_logger = self.access_logger
+                ControlRequestHandler.control_dir = self.control_dir
+                ControlRequestHandler.result_store = self.result_store
+                ControlRequestHandler.result_port = self.result_port
 
-            self.control_server = socketserver.TCPServer(("localhost", self.control_port), ControlRequestHandler)
-            self.control_thread = threading.Thread(target=self.control_server.serve_forever, daemon=True)
-            self.control_thread.start()
-            self.control_running = True
-            self.log_status(f"✓ 操控服务已启动 (localhost:{self.control_port})")
+                self.control_server = socketserver.TCPServer(("localhost", self.control_port), ControlRequestHandler)
+                self.control_thread = threading.Thread(target=self.control_server.serve_forever, daemon=True)
+                self.control_thread.start()
+                self.control_running = True
+                self.log_status(f"✓ 操控服务已启动 (localhost:{self.control_port})")
 
-            # 启动结果服务器
-            ResultRequestHandler.access_logger = self.access_logger
-            ResultRequestHandler.result_store = self.result_store
+                ResultRequestHandler.access_logger = self.access_logger
+                ResultRequestHandler.result_store = self.result_store
 
-            self.result_server = socketserver.TCPServer(("localhost", self.result_port), ResultRequestHandler)
-            self.result_thread = threading.Thread(target=self.result_server.serve_forever, daemon=True)
-            self.result_thread.start()
-            self.result_running = True
-            self.log_status(f"✓ 结果服务已启动 (localhost:{self.result_port})")
+                self.result_server = socketserver.TCPServer(("localhost", self.result_port), ResultRequestHandler)
+                self.result_thread = threading.Thread(target=self.result_server.serve_forever, daemon=True)
+                self.result_thread.start()
+                self.result_running = True
+                self.log_status(f"✓ 结果服务已启动 (localhost:{self.result_port})")
+            else:
+                self.log_status("⊙ 控制端口未启用，已跳过操控服务与结果服务")
 
             # 更新按钮和输入框状态
             self.start_button.config(state=tk.DISABLED)
@@ -707,14 +765,16 @@ class WebsiteHubApp:
             self.restart_button.config(state=tk.NORMAL)
             self.website_port_entry.config(state=tk.DISABLED)
             self.download_port_entry.config(state=tk.DISABLED)
-            self.control_port_entry.config(state=tk.DISABLED)
-            self.result_port_entry.config(state=tk.DISABLED)
+            self.remote_control_button.config(state=tk.DISABLED)
+            self.control_enable_check.config(state=tk.DISABLED)
+            self._refresh_control_entries()
 
             self.log_status("✓ 所有服务启动成功！")
             self.log_status(f"网站访问地址: http://localhost:{self.website_port}")
             self.log_status(f"文件下载地址: http://localhost:{self.download_port}")
-            self.log_status(f"远程操控地址: http://localhost:{self.control_port}")
-            self.log_status(f"运行结果地址: http://localhost:{self.result_port}")
+            if control_enabled:
+                self.log_status(f"远程操控地址: http://localhost:{self.control_port}")
+                self.log_status(f"运行结果地址: http://localhost:{self.result_port}")
             
         except Exception as e:
             self.log_status(f"✗ 启动失败: {str(e)}")
@@ -753,8 +813,9 @@ class WebsiteHubApp:
             self.restart_button.config(state=tk.DISABLED)
             self.website_port_entry.config(state=tk.NORMAL)
             self.download_port_entry.config(state=tk.NORMAL)
-            self.control_port_entry.config(state=tk.NORMAL)
-            self.result_port_entry.config(state=tk.NORMAL)
+            self.remote_control_button.config(state=tk.NORMAL)
+            self.control_enable_check.config(state=tk.NORMAL)
+            self._refresh_control_entries()
             
             self.log_status("✓ 所有服务已停止")
         except Exception as e:
