@@ -141,11 +141,11 @@ Website Hub/
 | User-Agent | 访问者的浏览器信息 |
 
 ## 开始配置
-恭喜！您已经完成了所有准备工作，马上就能开始使用Cilent Website 了。
+恭喜！您已经完成了所有准备工作，马上就能开始使用Website Hub 了。
 ### 准备网页
-本程序支持各类网页形式，我们最推荐的格式是HTML格式。请将您编写好的HTML文件存储到```Cilent Website\index```中。由于本程序支持自动映射index.html，所以如果您的文件夹中中只有一个文件，请将唯一的文件命名为```index.html```，本产品就会自动减少地址栏输入。
+本程序支持各类网页形式，我们最推荐的格式是HTML格式。请将您编写好的HTML文件存储到```Website Hub\index```中。由于本程序支持自动映射index.html，所以如果您的文件夹中中只有一个文件，请将唯一的文件命名为```index.html```，本产品就会自动减少地址栏输入。
 ```bash
-Cilent Website/
+Website Hub/
 ├── main.py
 ├── index/
 │   └── demo/
@@ -154,9 +154,9 @@ Cilent Website/
 │   └── download/
 └── README.md
 ```
-例如此文件格式，当demo中只有一个文件时，只需要在浏览器中输入```localhost:8000\index\demo```，此程序就会自动向浏览器发送```Cilent Website/index/demo/index.html```。
+例如此文件格式，当demo中只有一个文件时，只需要在浏览器中输入```localhost:8000\index\demo```，此程序就会自动向浏览器发送```Website Hub/index/demo/index.html```。
 ```bash
-Cilent Website/
+Website Hub/
 ├── main.py
 ├── index/
 │   └── demo/
@@ -166,11 +166,11 @@ Cilent Website/
 │   └── download/
 └── README.md
 ```
-请在看此文件格式，由于```Cilent Website/index/demo```中有两个文件，所以您需要在浏览器中输入完整地址。例如当您想访问```Cilent Website/index/demo/page_one.html```时，您就必须在浏览器中输入```localhost:8000\index\demo\page_one.html```，程序才会向浏览器发送```page_one.html```; 同理，当您想访问```Cilent Website/index/demo/page_two.html```时，您就需要输入```localhost:8000\index\demo\page_two.html```。
+请在看此文件格式，由于```Website Hub/index/demo```中有两个文件，所以您需要在浏览器中输入完整地址。例如当您想访问```Website Hub/index/demo/page_one.html```时，您就必须在浏览器中输入```localhost:8000\index\demo\page_one.html```，程序才会向浏览器发送```page_one.html```; 同理，当您想访问```Website Hub/index/demo/page_two.html```时，您就需要输入```localhost:8000\index\demo\page_two.html```。
 ### 下载文件
 此程序支持下载文件，只需要跳转到您所指定的下载端口即可完成下载。请参考如下文件格式:
 ```bash
-Cilent Website/
+Website Hub/
 ├── main.py
 ├── index/
 │   └── demo/
@@ -188,7 +188,7 @@ Cilent Website/
 │       └── help.md
 └── README.md
 ```
-例如，当您请求```Cilent Website/request/download/cilent_website/README.md```时，只需要让网页跳转至```localhost:7000/cilent_website/README.md```即可下载；同理，当您请求```Cilent Website/request/download/help.md```时，只需要让浏览器跳转至```localhost:7000/help.md```即可。对于HTML，您可以参考此语句：
+例如，当您请求```Website Hub/request/download/cilent_website/README.md```时，只需要让网页跳转至```localhost:7000/websitehub/README.md```即可下载；同理，当您请求```Website Hub/request/download/help.md```时，只需要让浏览器跳转至```localhost:7000/help.md```即可。对于HTML，您可以参考此语句：
 ```html
 <a href="http://localhost:7000/filename.ext">下载文件</a>
 ```
