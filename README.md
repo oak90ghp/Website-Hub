@@ -1,8 +1,7 @@
-# Cilent Website
-
+# Website Hub
 ## 项目概述
 
-Cilent Website 是一个用 Python 开发的本地网站托管程序，提供图形化界面，支持在 localhost 上快速搭建和管理网站。本程序使用四端口模式，允许客户端使用互不干扰的端口浏览网页、下载文件、远程操控本地程序或接收程序的运行结果。
+Website Hub 是一个用 Python 开发的本地网站托管程序，提供图形化界面，支持在 localhost 上快速搭建和管理网站。本程序使用四端口模式，允许客户端使用互不干扰的端口浏览网页、下载文件、远程操控本地程序或接收程序的运行结果。
 
 ## 主要功能
 
@@ -33,7 +32,7 @@ Cilent Website 是一个用 Python 开发的本地网站托管程序，提供图
   - HTTP 状态码完整支持
 
 ## 文件结构
-- 本条目是再刚刚完成下载后，Cilent Website 所提供的原始包，如果使用的是经过第三方修改的包，可能与此结构不匹配。请参考由修改方提供的```README.md```文件
+- 本条目是再刚刚完成下载后，Website Hub 所提供的原始包，如果使用的是经过第三方修改的包，可能与此结构不匹配。请参考由修改方提供的```README.md```文件
 ```bash
 Cilent Website/
 ├── main.py
@@ -53,10 +52,9 @@ Cilent Website/
   - ```Cilent Website\request\control\```: 客户端远程操控的程序存储在此文件夹中，每个程序占用一个子文件夹
   - ```Cilent Website\README.md```: 本文件，所有版本的Cilent Website中，```README.md```文件均为用户指南
 
-## 使用步骤
-从更新进度来看，正式版 落后 Preview版 落后 调试版。
-- Releases版: Cilent Website 最稳定的版本，所有功能经过测试，但更新速度最慢，一般是经过测试的Preview版本。
-- Preview版: Cilent Website的测试版，经过一定的测试，但可能存在一些问题，通常是预发布版本，但正在进行测试。部分 Preview 版本的包未经过封装，要运行这些包时请确认Python运行环境完整。
+## 版本详解
+- Releases版: Website Hub 最稳定的版本，所有功能经过测试，但更新速度最慢，一般是经过测试的Preview版本。
+- Preview版: Website Hub 的测试版，经过一定的测试，但可能存在一些问题，通常是预发布版本，但正在进行测试。部分 Preview 版本的包未经过封装，要运行这些包时请确认Python运行环境完整。
 
 ## 访问规则详解
 
