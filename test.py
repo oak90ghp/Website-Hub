@@ -14,7 +14,7 @@ def test_imports():
     print("测试1：导入模块")
     print("=" * 50)
     try:
-        from main import WebsiteHubApp, AccessLogger, WebsiteRequestHandler, DownloadRequestHandler, ControlRequestHandler
+        from main import WebsiteHubApp, AccessLogger, WebsiteRequestHandler, DownloadRequestHandler, ControlRequestHandler, ResultRequestHandler, ResultStore
         print("✓ 所有模块导入成功")
         return True
     except Exception as e:
@@ -192,6 +192,53 @@ def test_control_feature():
 
     return all_ok
 
+def test_result_feature():
+    """测试运行结果回传功能"""
+    print("\n" + "=" * 50)
+    print("测试7：运行结果回传功能")
+    print("=" * 50)
+
+    import tempfile
+    import threading
+    from main import ResultStore, run_entry_capture
+
+    all_ok = True
+
+    # 场景1：ResultStore 基本读写
+    store = ResultStore()
+    event = store.start('test.py')
+
+    def _finish():
+        store.finish('test.py', event, 'test\n', 0)
+
+    threading.Thread(target=_finish).start()
+    result = store.get('test.py', timeout=5)
+    if result and result['done'] and result['output'] == 'test\n' and result['returncode'] == 0:
+        print("✓ ResultStore 读写正常")
+    else:
+        print(f"✗ ResultStore 读写异常: {result}")
+        all_ok = False
+
+    # 场景2：捕获 .py 脚本输出
+    tmp = tempfile.mkdtemp()
+    try:
+        script = os.path.join(tmp, 'main.py')
+        with open(script, 'w', encoding='utf-8') as f:
+            f.write('print("test")\n')
+        proc = run_entry_capture(script, tmp)
+        out, _ = proc.communicate(timeout=10)
+        if out.strip() == 'test':
+            print("✓ .py 输出捕获正常")
+        else:
+            print(f"✗ .py 输出捕获异常: {out!r}")
+            all_ok = False
+    finally:
+        import shutil
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    return all_ok
+
+
 def test_syntax():
     """测试 Python 语法"""
     print("\n" + "=" * 50)
@@ -224,6 +271,7 @@ def main():
         test_file_structure,
         test_syntax,
         test_control_feature,
+        test_result_feature,
     ]
     
     results = []

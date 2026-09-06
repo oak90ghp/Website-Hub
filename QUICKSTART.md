@@ -16,8 +16,9 @@ python main.py
 - **网站端口**：默认 8000（可自定义）
 - **下载端口**：默认 7000（可自定义）
 - **操控端口**：默认 9000（可自定义）
+- **结果端口**：默认 5000（可自定义）
 
-> 💡 确保三个端口不相同且未被其他程序占用
+> 💡 确保四个端口不相同且未被其他程序占用
 
 ## 第三步：启动服务
 
@@ -109,6 +110,15 @@ NEED-PASSWORD=False
 <a href="http://localhost:9000/test.exe">启动 test.exe</a>
 ```
 
+### 7.4 获取运行结果
+
+操控服务运行程序时会捕获其终端输出（标准输出 + 标准错误），并通过**结果端口（默认 5000）**回传。结果不会显示在浏览器页面里，而是以纯文本返回。
+
+- 先触发运行：`localhost:9000/test.py`
+- 再读取结果：`localhost:5000/test.py`
+
+例如 `request/control/test.py/main.py` 中写了 `print("test")`，访问 `localhost:5000/test.py` 将收到 `test`。
+
 ## 📋 访问规则参考
 
 ### 规则 1：自动 index.html 映射
@@ -138,6 +148,13 @@ NEED-PASSWORD=False
 |---------|---------|
 | `request/control/test.exe/main.bat` | `localhost:9000/test.exe` |
 | `request/control/calc.exe/main.exe` | `localhost:9000/calc.exe&&password="密码"`（受密码保护时） |
+
+### 规则 5：运行结果回传
+
+| 文件位置 | 读取结果地址 |
+|---------|---------|
+| `request/control/test.py/main.py` | 先 `localhost:9000/test.py` 触发，再 `localhost:5000/test.py` 读取输出 |
+| `request/control/calc.exe/main.exe` | 先 `localhost:9000/calc.exe` 触发，再 `localhost:5000/calc.exe` 读取输出 |
 
 ## 🎮 管理界面操作
 
@@ -236,13 +253,15 @@ Cilent Website/
    ↓
 9. 在浏览器中访问 http://localhost:9000/程序名 远程运行
    ↓
-10. 查看"访问记录"了解用户活动
+10. 访问 http://localhost:5000/程序名 获取终端运行结果
+   ↓
+11. 查看"访问记录"了解用户活动
 ```
 
 ## ✨ 功能特性
 
 - ✅ 图形化管理界面（无需命令行）
-- ✅ 三端口架构（网站 + 下载 + 操控分离）
+- ✅ 四端口架构（网站 + 下载 + 操控 + 结果分离）
 - ✅ 自动 index.html 映射
 - ✅ 完整的访问日志
 - ✅ 一键启动/停止/重启
@@ -250,6 +269,7 @@ Cilent Website/
 - ✅ 中文界面和日志
 - ✅ 路径安全防护
 - ✅ 远程操控本地程序（支持可选密码保护）
+- ✅ 运行结果回传（终端输出通过结果端口返回）
 
 ## 📞 需要帮助？
 

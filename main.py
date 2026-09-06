@@ -47,6 +47,54 @@ class AccessLogger:
         self.logs = []
 
 
+class ResultStore:
+    """运行结果存储：保存远程操控程序的终端输出，供结果服务(默认5000端口)读取"""
+    def __init__(self):
+        self._store = {}
+        self._lock = threading.Lock()
+
+    def start(self, key):
+        """登记一次运行，返回本次运行对应的事件。"""
+        event = threading.Event()
+        with self._lock:
+            self._store[key] = {
+                'event': event,
+                'output': None,
+                'returncode': None,
+                'done': False,
+            }
+        return event
+
+    def finish(self, key, event, output, returncode):
+        """写入运行结果。仅当 key 对应仍是本次运行时才写入。"""
+        with self._lock:
+            entry = self._store.get(key)
+            if entry is None or entry['event'] is not event:
+                return
+            entry['output'] = output
+            entry['returncode'] = returncode
+            entry['done'] = True
+            entry['event'].set()
+
+    def get(self, key, timeout=None):
+        """获取结果。若仍在运行则最多等待 timeout 秒。"""
+        with self._lock:
+            entry = self._store.get(key)
+        if entry is None:
+            return None
+        if timeout:
+            entry['event'].wait(timeout)
+        with self._lock:
+            entry = self._store.get(key)
+            if entry is None:
+                return None
+            return {
+                'output': entry['output'],
+                'returncode': entry['returncode'],
+                'done': entry['done'],
+            }
+
+
 class WebsiteRequestHandler(http.server.SimpleHTTPRequestHandler):
     # 类变量，指向访问日志记录器
     access_logger = None
@@ -165,7 +213,7 @@ class WebsiteRequestHandler(http.server.SimpleHTTPRequestHandler):
         pass  # 禁用默认日志
 
 
-class DownloadRequestHandler(http.server.SimpleHTTPRequestHandler):
+class DownloadRequestHandler(http.server.SimpleHTTPRequestHandler): 
     """下载服务请求处理器"""
     
     access_logger = None
@@ -248,6 +296,23 @@ def find_entry_file(folder):
     return None
 
 
+def run_entry_capture(entry_file, folder):
+    """运行入口文件并捕获其终端输出(stdout+stderr)。返回 Popen 对象。"""
+    # .py 脚本显式用 Python 解释器运行，保证标准输出被正确捕获（含中文）
+    if entry_file.lower().endswith('.py') and not getattr(sys, 'frozen', False):
+        env = dict(os.environ)
+        env['PYTHONIOENCODING'] = 'utf-8'
+        return subprocess.Popen(
+            [sys.executable, entry_file], cwd=folder, env=env,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding='utf-8', errors='replace')
+    # 其他类型（.exe/.bat 等）沿用 shell 关联方式运行
+    return subprocess.Popen(
+        entry_file, cwd=folder, shell=True,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        text=True, errors='replace')
+
+
 def read_need_password(control_folder):
     """读取 WEBSTIEHUB_RUNNING_INFO.ini 中的 NEED-PASSWORD 项。
     值为 False（不区分大小写）表示不需要密码，其他值均视为密码。"""
@@ -292,6 +357,8 @@ class ControlRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     access_logger = None
     control_dir = None
+    result_store = None
+    result_port = None
 
     def do_GET(self):
         """处理GET请求"""
@@ -345,22 +412,42 @@ class ControlRequestHandler(http.server.SimpleHTTPRequestHandler):
                     self.access_logger.logs[-1]['status_code'] = 403
                 return
 
-        # 运行入口文件
+        # 运行入口文件并捕获终端输出
         entry_file = find_entry_file(folder)
         try:
-            subprocess.Popen(entry_file, cwd=folder, shell=True)
+            proc = run_entry_capture(entry_file, folder)
         except Exception as e:
             self.send_error(500, str(e))
             if self.access_logger:
                 self.access_logger.logs[-1]['status_code'] = 500
             return
 
+        # 后台收集输出，写入结果存储，供结果服务读取
+        if self.result_store is not None:
+            key = path
+            event = self.result_store.start(key)
+
+            def _collect():
+                try:
+                    output, _ = proc.communicate()
+                    returncode = proc.returncode
+                except Exception as e:
+                    output, returncode = str(e), -1
+                self.result_store.finish(key, event, output or '', returncode)
+
+            threading.Thread(target=_collect, daemon=True).start()
+
         # 返回提示页面
+        result_hint = ''
+        if self.result_port:
+            result_hint = (f'<p>终端运行结果: <a href="http://localhost:{self.result_port}/{path}">'
+                           f'http://localhost:{self.result_port}/{path}</a></p>')
         html = ('<html><head><meta charset="utf-8">'
                 f'<title>操控成功</title></head><body>'
                 f'<h1>操控成功</h1>'
                 f'<p>程序 {path} 已在本地启动。</p>'
                 f'<p>请求路径: {raw_path}</p>'
+                f'{result_hint}'
                 f'</body></html>')
         data = html.encode('utf-8')
         self.send_response(200)
@@ -370,6 +457,58 @@ class ControlRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(data)
         if self.access_logger:
             self.access_logger.logs[-1]['status_code'] = 200
+
+    def log_message(self, format, *args):
+        """重写日志输出"""
+        pass
+
+
+class ResultRequestHandler(http.server.SimpleHTTPRequestHandler):
+    """结果服务请求处理器：通过默认5000端口回传终端运行结果"""
+
+    access_logger = None
+    result_store = None
+
+    def do_GET(self):
+        """处理GET请求，返回指定程序的终端输出"""
+        client_ip = self.client_address[0]
+        path = unquote(self.path)
+
+        # 记录访问
+        if self.access_logger:
+            user_agent = self.headers.get('User-Agent', '')
+            self.access_logger.add_log(client_ip, 'GET (Result)', path, 0, user_agent)
+
+        # 移除查询字符串和前导斜杠
+        if '?' in path:
+            path = path.split('?')[0]
+        if path.startswith('/'):
+            path = path[1:]
+
+        # 读取运行结果；程序未结束时最多等待 30 秒
+        result = self.result_store.get(path, timeout=30) if self.result_store else None
+
+        if result is None:
+            self.send_error(404, "Not Found")
+            if self.access_logger:
+                self.access_logger.logs[-1]['status_code'] = 404
+            return
+
+        if not result['done']:
+            body = "[程序仍在运行中，尚未产生输出]\n"
+            status_code = 202
+        else:
+            body = result['output'] if result['output'] else ""
+            status_code = 200
+
+        data = body.encode('utf-8')
+        self.send_response(status_code)
+        self.send_header('Content-type', 'text/plain; charset=utf-8')
+        self.send_header('Content-Length', str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+        if self.access_logger:
+            self.access_logger.logs[-1]['status_code'] = status_code
 
     def log_message(self, format, *args):
         """重写日志输出"""
@@ -402,21 +541,28 @@ class WebsiteHubApp:
         # 初始化访问日志
         self.access_logger = AccessLogger()
 
+        # 初始化运行结果存储
+        self.result_store = ResultStore()
+
         # 服务器变量
         self.website_server = None
         self.download_server = None
         self.control_server = None
+        self.result_server = None
         self.website_thread = None
         self.download_thread = None
         self.control_thread = None
+        self.result_thread = None
         self.website_running = False
         self.download_running = False
         self.control_running = False
+        self.result_running = False
 
         # 默认端口
         self.website_port = 8000
         self.download_port = 7000
         self.control_port = 9000
+        self.result_port = 5000
         
         # 创建UI
         self.create_ui()
@@ -452,6 +598,12 @@ class WebsiteHubApp:
         self.control_port_var = tk.StringVar(value="9000")
         self.control_port_entry = ttk.Entry(config_frame, textvariable=self.control_port_var, width=10)
         self.control_port_entry.grid(row=2, column=1, sticky=tk.W, padx=5)
+
+        # 结果端口
+        ttk.Label(config_frame, text="结果端口:").grid(row=3, column=0, sticky=tk.W, pady=5)
+        self.result_port_var = tk.StringVar(value="5000")
+        self.result_port_entry = ttk.Entry(config_frame, textvariable=self.result_port_var, width=10)
+        self.result_port_entry.grid(row=3, column=1, sticky=tk.W, padx=5)
         
         # 目录信息
         info_frame = ttk.LabelFrame(self.root, text="目录信息", padding=10)
@@ -501,9 +653,10 @@ class WebsiteHubApp:
             self.website_port = int(self.website_port_var.get())
             self.download_port = int(self.download_port_var.get())
             self.control_port = int(self.control_port_var.get())
+            self.result_port = int(self.result_port_var.get())
 
-            if len({self.website_port, self.download_port, self.control_port}) != 3:
-                messagebox.showerror("错误", "网站端口、下载端口和操控端口不能相同！")
+            if len({self.website_port, self.download_port, self.control_port, self.result_port}) != 4:
+                messagebox.showerror("错误", "网站端口、下载端口、操控端口和结果端口不能相同！")
                 return
             
             # 启动网站服务器
@@ -529,12 +682,24 @@ class WebsiteHubApp:
             # 启动操控服务器
             ControlRequestHandler.access_logger = self.access_logger
             ControlRequestHandler.control_dir = self.control_dir
+            ControlRequestHandler.result_store = self.result_store
+            ControlRequestHandler.result_port = self.result_port
 
             self.control_server = socketserver.TCPServer(("localhost", self.control_port), ControlRequestHandler)
             self.control_thread = threading.Thread(target=self.control_server.serve_forever, daemon=True)
             self.control_thread.start()
             self.control_running = True
             self.log_status(f"✓ 操控服务已启动 (localhost:{self.control_port})")
+
+            # 启动结果服务器
+            ResultRequestHandler.access_logger = self.access_logger
+            ResultRequestHandler.result_store = self.result_store
+
+            self.result_server = socketserver.TCPServer(("localhost", self.result_port), ResultRequestHandler)
+            self.result_thread = threading.Thread(target=self.result_server.serve_forever, daemon=True)
+            self.result_thread.start()
+            self.result_running = True
+            self.log_status(f"✓ 结果服务已启动 (localhost:{self.result_port})")
 
             # 更新按钮和输入框状态
             self.start_button.config(state=tk.DISABLED)
@@ -543,11 +708,13 @@ class WebsiteHubApp:
             self.website_port_entry.config(state=tk.DISABLED)
             self.download_port_entry.config(state=tk.DISABLED)
             self.control_port_entry.config(state=tk.DISABLED)
+            self.result_port_entry.config(state=tk.DISABLED)
 
             self.log_status("✓ 所有服务启动成功！")
             self.log_status(f"网站访问地址: http://localhost:{self.website_port}")
             self.log_status(f"文件下载地址: http://localhost:{self.download_port}")
             self.log_status(f"远程操控地址: http://localhost:{self.control_port}")
+            self.log_status(f"运行结果地址: http://localhost:{self.result_port}")
             
         except Exception as e:
             self.log_status(f"✗ 启动失败: {str(e)}")
@@ -574,6 +741,12 @@ class WebsiteHubApp:
                 self.control_running = False
                 self.log_status("✓ 操控服务已停止")
 
+            if self.result_server:
+                self.result_server.shutdown()
+                self.result_server = None
+                self.result_running = False
+                self.log_status("✓ 结果服务已停止")
+
             # 更新按钮和输入框状态
             self.start_button.config(state=tk.NORMAL)
             self.stop_button.config(state=tk.DISABLED)
@@ -581,6 +754,7 @@ class WebsiteHubApp:
             self.website_port_entry.config(state=tk.NORMAL)
             self.download_port_entry.config(state=tk.NORMAL)
             self.control_port_entry.config(state=tk.NORMAL)
+            self.result_port_entry.config(state=tk.NORMAL)
             
             self.log_status("✓ 所有服务已停止")
         except Exception as e:
