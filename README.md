@@ -2,15 +2,13 @@
 
 ## 项目概述
 
-Cilent Website 是一个用 Python 开发的本地网站托管程序，提供图形化界面，支持在 localhost 上快速搭建和管理网站。本程序使用四端口模式，允许客户端使用互不干扰的端口浏览网页、下载文件、远程操控本地程序或接收程序的运行结果。
+Cilent Website 是一个用 Python 开发的本地网站托管程序，提供图形化界面，支持在 localhost 上快速搭建和管理网站。本程序使用双端口模式，允许客户端使用互不干扰的端口浏览网页或下载文件。
 
 ## 主要功能
 
-- ✅ **四端口**
+- ✅ **双端口**
   - 网站服务器（默认 8000 端口）：托管网站文件，允许用户在浏览器中免下载浏览网页
-  - 下载服务器（默认 7000 端口）：提供文件下载，允许用户使用直链下载服务器中的文件
-  - 操控服务器（默认 9000 端口）：远程运行本机程序，支持可选的密码保护
-  - 结果服务器（默认 5000 端口）：回传远程操控程序的终端运行结果
+  - 下载服务器（默认 7000 端口）：提供文件下载，允许用户使用直链西在服务器中的文件
 
 - ✅ **图形化管理界面**
   - 使用 tkinter 构建 GUI
@@ -41,17 +39,15 @@ Cilent Website/
 ├── index/
 │   └── index.html
 ├── request/                
-│   ├── download/
-│   └── control/
+│   └── download/
 └── README.md
 ```
   - ```Cilent Website```: 程序的根目录
   - ```Cilent Website\main.py```: 未经封装的主程序文件
   - ```Cilent Website\index\```: 网站文件夹，所有用户会请求的网页都会在此处
   - ```Cilent Website\index\index.html```: 实例HTML，可以删除此文件
-  - ```Cilent Website\request\```: 所有客户端可能会请求的文件都在```request```文件夹的子文件夹中，目前有```download```和```control```，我们可能会在之后的更新中添加其他子文件夹，具体参考对应版本的更新日志(```update.md```)
+  - ```Cilent Website\request\```: 所有客户端可能会请求的文件都在```request```文件夹的子文件夹中，目前只有```download```，我们可能会在之后的更新中添加其他子文件夹，具体参考对应版本的更新日志(```update.md```)
   - ```Cilent Website\request\download\```: 客户端所有会请求的文件都会存储在此文件夹中，此文件夹中的文件共客户端下载使用
-  - ```Cilent Website\request\control\```: 客户端远程操控的程序存储在此文件夹中，每个程序占用一个子文件夹
   - ```Cilent Website\README.md```: 本文件，所有版本的Cilent Website中，```README.md```文件均为用户指南
 
 ## 使用步骤
@@ -77,7 +73,7 @@ Cilent Website/
 ## 访问规则详解
 
 ### 规则 1：index.html 自动映射
-当访问的文件夹中只有一个 `index.html` 文件时，可以省略文件名。
+当访问的文件夹中有一个 `index.html` 文件时且要请求此页面时，可以省略```index.html```，但如果要请求的不是```index.html```，则必须加上对应的文件名。
 
 **示例：**
 - 文件路径：`index/hosting/help/index.html`
@@ -100,47 +96,11 @@ Cilent Website/
 - 文件位置：`request/download/main.exe`
 - 下载地址：`http://localhost:7000/main.exe`
 
-### 规则 5：远程操控程序
-操控服务器将 `request/control` 文件夹映射到操控端口的根目录。每个程序占用一个子文件夹（文件夹名即调用名），文件夹中至少包含两个文件：
-
-1. 入口文件，必须命名为 `main`（后缀不限），例如 `main.exe`、`main.bat`、`main.py`
-2. 配置文件 `WEBSTIEHUB_RUNNING_INFO.ini`，使用 UTF-8 编码，其中 `NEED-PASSWORD` 项决定调用时是否需要密码：
-   - `NEED-PASSWORD=False`：无需密码
-   - `NEED-PASSWORD=任意密码`：需要密码，调用时必须带上该密码
-
-**示例：**
-- 目录结构：
-  ```
-  request/control/test.exe/
-  ├── main.bat
-  └── WEBSTIEHUB_RUNNING_INFO.ini   (内容: NEED-PASSWORD=False)
-  ```
-- 无需密码时：访问 `http://localhost:9000/test.exe` 即可运行 `main.bat`
-- 若 `NEED-PASSWORD=7891dog.0`，则需要访问 `http://localhost:9000/test.exe&&password="7891dog.0"` 才能运行
-- 密码错误时返回 403，缺少密码时返回 401
-- 密码也可通过普通查询参数传递：`http://localhost:9000/test.exe?password=7891dog.0`
-
-### 规则 6：运行结果回传
-操控服务器运行程序时会捕获该程序在终端中的输出（标准输出和标准错误），并将结果通过结果服务器（默认 5000 端口）回传给客户端。结果不会被渲染在浏览器页面里，而是以纯文本形式从结果端口返回。
-
-**示例：**
-- `request/control/test.py/main.py` 中写了一行 `print("test")`，且 `WEBSTIEHUB_RUNNING_INFO.ini` 内容为 `NEED-PASSWORD=False`：
-  1. 先访问 `http://localhost:9000/test.py` 触发运行
-  2. 再访问 `http://localhost:5000/test.py` 即可收到运行结果 `test`
-- 若程序尚未运行结束，结果端口会等待（最长 30 秒）并返回 `202`；结束后返回 `200` 与完整输出
-- 结果以程序名（文件夹名）为键，例如 `test.py`、`calc.exe`
-
-### 示例：在 HTML 中远程启动程序
-```html
-<a href="http://localhost:9000/test.exe">启动 test.exe</a>
-<a href="http://localhost:9000/test.exe&&password=7891dog.0">启动受密码保护的 test.exe</a>
-```
-
 ## 🎮 管理界面按钮说明
 
 | 按钮 | 功能 | 备注 |
 |------|------|------|
-| 启动服务 | 启动网站、下载和操控服务 | 启动后按钮变灰，端口配置项锁定 |
+| 启动服务 | 启动网站和下载服务 | 启动后按钮变灰，端口配置项锁定 |
 | 停止服务 | 停止所有服务 | 仅在服务运行时可用 |
 | 重启服务 | 快速重启服务 | 仅在服务运行时可用 |
 | 访问记录 | 查看完整的访问日志 | 显示时间、IP、请求信息等 |
@@ -214,7 +174,7 @@ Cilent Website/
 ## 🔧 常见问题
 
 ### Q: 如何修改默认端口？
-A: 在管理界面中修改"网站端口"、"下载端口"、"操控端口"和"结果端口"的值，然后点击"启动服务"。
+A: 在管理界面中修改"网站端口"和"下载端口"的值，然后点击"启动服务"。
 
 ### Q: 端口已被占用如何处理？
 A: 在管理界面中修改为未被占用的端口号即可。
@@ -230,7 +190,6 @@ A: 支持，但建议使用英文文件名以获得最佳兼容性。
 - 程序实现了路径遍历防护，防止访问指定文件夹外的文件
 - 建议在内网或本地环境使用
 - 不建议在互联网上直接暴露此服务
-- ⚠️ 操控服务会在本机运行 `request/control` 中的程序，请只放置自己信任的程序，并仅为需要保护的程序设置密码
 
 ---
 

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cilent Website - 帮助中心</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        header nav {
+            margin-top: 15px;
+        }
+        
+        header nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            transition: opacity 0.3s;
+        }
+        
+        header nav a:hover {
+            opacity: 0.8;
+        }
+        
+        main {
+            padding: 40px 20px;
+        }
+        
+        h2 {
+            color: #333;
+            margin: 30px 0 20px;
+            padding-left: 15px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .faq-item {
+            background: #f8f9fa;
+            margin: 15px 0;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .faq-item h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        
+        .faq-item p {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #ddd;
+        }
+        
+        .breadcrumb {
+            color: #999;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+        
+        .breadcrumb a {
+            color: #667eea;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 帮助中心</h1>
+            <nav>
+                <a href="http://localhost:8000">主页</a>
+                <a href="http://localhost:8000/demo.html">演示</a>
+                <a href="http://localhost:8000/hosting/help">帮助</a>
+            </nav>
+        </header>
+        
+        <main>
+            <div class="breadcrumb">
+                <a href="http://localhost:8000">主页</a> > 帮助中心
+            </div>
+            
+            <h2>❓ 常见问题</h2>
+            
+            <div class="faq-item">
+                <h3>Q: 如何修改端口？</h3>
+                <p>在管理界面中修改"网站端口"和"下载端口"的值，然后点击"启动服务"即可。请确保新端口未被其他程序占用。</p>
+            </div>
+            
+            <div class="faq-item">
+                <h3>Q: 如何添加 CSS 和 JavaScript？</h3>
+                <p>将 CSS 和 JavaScript 文件放在 <code>index/</code> 文件夹中，在 HTML 中正常引用即可：</p>
+                <div class="code-block">&lt;link rel="stylesheet" href="/style.css"&gt;
+&lt;script src="/script.js"&gt;&lt;/script&gt;</div>
+            </div>
+            
+            <div class="faq-item">
+                <h3>Q: 如何创建多层目录？</h3>
+                <p>可以任意创建子文件夹。例如，访问 <code>index/hosting/help/index.html</code> 可以用 <code>http://localhost:8000/hosting/help</code> 访问。</p>
+            </div>
+            
+            <div class="faq-item">
+                <h3>Q: 如何实现文件下载？</h3>
+                <p>在 HTML 中添加下载链接：</p>
+                <div class="code-block">&lt;a href="http://localhost:7000/filename.exe"&gt;下载&lt;/a&gt;</div>
+                <p>文件需要放在 <code>request/download/</code> 文件夹中。</p>
+            </div>
+            
+            <div class="faq-item">
+                <h3>Q: 如何查看访问日志？</h3>
+                <p>在管理界面点击"访问记录"按钮，会显示所有访问信息，包括 IP、时间、状态码、User-Agent 等。</p>
+            </div>
+            
+            <div class="faq-item">
+                <h3>Q: 支持图片、视频等媒体文件吗？</h3>
+                <p>完全支持！将媒体文件放在 <code>index/</code> 文件夹中，在 HTML 中正常引用：</p>
+                <div class="code-block">&lt;img src="/images/photo.jpg" alt="图片"&gt;
+&lt;video src="/videos/demo.mp4"&gt;&lt;/video&gt;</div>
+            </div>
+            
+            <h2>🔧 技术信息</h2>
+            
+            <div class="faq-item">
+                <h3>支持的文件类型</h3>
+                <p>程序支持所有标准 web 文件类型：</p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>HTML/CSS/JavaScript</li>
+                    <li>图片（JPG、PNG、GIF、WebP 等）</li>
+                    <li>媒体（MP4、WebM、MP3、OGG 等）</li>
+                    <li>文档（PDF、ZIP 等）</li>
+                    <li>其他任意文件格式</li>
+                </ul>
+            </div>
+            
+            <div class="faq-item">
+                <h3>性能和限制</h3>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>支持无限数量的页面和文件</li>
+                    <li>单个文件大小无限制</li>
+                    <li>支持并发访问</li>
+                    <li>本地 localhost 运行，不受互联网限制</li>
+                </ul>
+            </div>
+            
+            <h2>💡 使用技巧</h2>
+            
+            <div class="faq-item">
+                <h3>技巧 1：快速重启</h3>
+                <p>点击"重启服务"按钮可以快速刷新服务，无需手动停止后再启动。</p>
+            </div>
+            
+            <div class="faq-item">
+                <h3>技巧 2：组织文件结构</h3>
+                <p>建议使用如下结构来组织文件：</p>
+                <div class="code-block">index/
+├── index.html
+├── css/
+├── js/
+├── images/
+├── pages/
+└── downloads/</div>
+            </div>
+            
+            <div class="faq-item">
+                <h3>技巧 3：测试响应式设计</h3>
+                <p>使用浏览器的开发者工具（F12）来测试响应式设计。程序支持所有标准的 web 技术。</p>
+            </div>
+            
+            <h2>🆘 故障排除</h2>
+            
+            <div class="faq-item">
+                <h3>问题：无法启动服务</h3>
+                <p>常见原因：</p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>端口被占用 → 更换端口</li>
+                    <li>防火墙阻止 → 允许通过防火墙</li>
+                    <li>Python 环境问题 → 检查 Python 版本</li>
+                </ul>
+            </div>
+            
+            <div class="faq-item">
+                <h3>问题：找不到文件（404）</h3>
+                <p>检查：</p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>文件是否在 <code>index/</code> 文件夹中</li>
+                    <li>文件路径是否与 URL 相符</li>
+                    <li>文件名是否拼写正确</li>
+                </ul>
+            </div>
+            
+            <div class="faq-item">
+                <h3>运行测试诊断</h3>
+                <p>运行以下命令进行诊断：</p>
+                <div class="code-block">python test.py</div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>© 2024 Cilent Website - 帮助中心</p>
+        </footer>
+    </div>
+</body>
+</html>

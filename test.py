@@ -14,7 +14,7 @@ def test_imports():
     print("测试1：导入模块")
     print("=" * 50)
     try:
-        from main import WebsiteHubApp, AccessLogger, WebsiteRequestHandler, DownloadRequestHandler, ControlRequestHandler, ResultRequestHandler, ResultStore
+        from main import ClientWebsiteApp, AccessLogger, WebsiteRequestHandler, DownloadRequestHandler
         print("✓ 所有模块导入成功")
         return True
     except Exception as e:
@@ -26,16 +26,14 @@ def test_directory_structure():
     print("\n" + "=" * 50)
     print("测试2：目录结构")
     print("=" * 50)
-
+    
     app_dir = os.path.dirname(os.path.abspath(__file__))
     index_dir = os.path.join(app_dir, 'index')
     download_dir = os.path.join(app_dir, 'request', 'download')
-    control_dir = os.path.join(app_dir, 'request', 'control')
-
+    
     checks = [
         (index_dir, "网站文件夹 (index)"),
         (download_dir, "下载文件夹 (request/download)"),
-        (control_dir, "操控文件夹 (request/control)"),
     ]
     
     all_ok = True
@@ -108,137 +106,6 @@ def test_file_structure():
     
     return all_ok
 
-def test_control_feature():
-    """测试远程操控功能"""
-    print("\n" + "=" * 50)
-    print("测试6：远程操控功能")
-    print("=" * 50)
-
-    import tempfile
-    from main import find_entry_file, read_need_password, find_control_folder
-
-    all_ok = True
-
-    # 准备临时 control 目录
-    tmp = tempfile.mkdtemp()
-    try:
-        # 场景1：无密码保护
-        folder = os.path.join(tmp, 'test.exe')
-        os.makedirs(folder)
-        with open(os.path.join(folder, 'main.txt'), 'w', encoding='utf-8') as f:
-            f.write('test')
-        with open(os.path.join(folder, 'WEBSTIEHUB_RUNNING_INFO.ini'), 'w', encoding='utf-8') as f:
-            f.write('NEED-PASSWORD=False\n')
-
-        if find_entry_file(folder) and read_need_password(folder) is False:
-            print("✓ 无密码配置解析正常")
-        else:
-            print("✗ 无密码配置解析出错")
-            all_ok = False
-
-        located, error = find_control_folder(tmp, 'test.exe')
-        if error is None and located == folder:
-            print("✓ 文件夹定位正常")
-        else:
-            print(f"✗ 文件夹定位出错: {error}")
-            all_ok = False
-
-        # 场景2：密码保护
-        folder2 = os.path.join(tmp, 'calc.exe')
-        os.makedirs(folder2)
-        with open(os.path.join(folder2, 'main.bat'), 'w', encoding='utf-8') as f:
-            f.write('@echo off\n')
-        with open(os.path.join(folder2, 'WEBSTIEHUB_RUNNING_INFO.ini'), 'w', encoding='utf-8') as f:
-            f.write('NEED-PASSWORD=7891dog.0\n')
-
-        if read_need_password(folder2) == '7891dog.0':
-            print("✓ 密码配置解析正常")
-        else:
-            print("✗ 密码配置解析出错")
-            all_ok = False
-
-        # 场景3：文件夹缺少必要文件
-        folder3 = os.path.join(tmp, 'bad.exe')
-        os.makedirs(folder3)
-        with open(os.path.join(folder3, 'main.txt'), 'w', encoding='utf-8') as f:
-            f.write('test')
-
-        _, error = find_control_folder(tmp, 'bad.exe')
-        if error == 400:
-            print("✓ 缺少配置文件时返回 400")
-        else:
-            print(f"✗ 缺少配置文件时应返回 400，实际: {error}")
-            all_ok = False
-
-        # 场景4：不存在的文件夹
-        _, error = find_control_folder(tmp, 'none.exe')
-        if error == 404:
-            print("✓ 不存在的文件夹返回 404")
-        else:
-            print(f"✗ 不存在的文件夹应返回 404，实际: {error}")
-            all_ok = False
-
-        # 场景5：路径遍历防护
-        _, error = find_control_folder(tmp, '..%2f..%2fmain.py')
-        if error == 403:
-            print("✓ 路径遍历防护正常 (403)")
-        else:
-            print(f"✗ 路径遍历防护异常，实际: {error}")
-            all_ok = False
-
-    finally:
-        import shutil
-        shutil.rmtree(tmp, ignore_errors=True)
-
-    return all_ok
-
-def test_result_feature():
-    """测试运行结果回传功能"""
-    print("\n" + "=" * 50)
-    print("测试7：运行结果回传功能")
-    print("=" * 50)
-
-    import tempfile
-    import threading
-    from main import ResultStore, run_entry_capture
-
-    all_ok = True
-
-    # 场景1：ResultStore 基本读写
-    store = ResultStore()
-    event = store.start('test.py')
-
-    def _finish():
-        store.finish('test.py', event, 'test\n', 0)
-
-    threading.Thread(target=_finish).start()
-    result = store.get('test.py', timeout=5)
-    if result and result['done'] and result['output'] == 'test\n' and result['returncode'] == 0:
-        print("✓ ResultStore 读写正常")
-    else:
-        print(f"✗ ResultStore 读写异常: {result}")
-        all_ok = False
-
-    # 场景2：捕获 .py 脚本输出
-    tmp = tempfile.mkdtemp()
-    try:
-        script = os.path.join(tmp, 'main.py')
-        with open(script, 'w', encoding='utf-8') as f:
-            f.write('print("test")\n')
-        proc = run_entry_capture(script, tmp)
-        out, _ = proc.communicate(timeout=10)
-        if out.strip() == 'test':
-            print("✓ .py 输出捕获正常")
-        else:
-            print(f"✗ .py 输出捕获异常: {out!r}")
-            all_ok = False
-    finally:
-        import shutil
-        shutil.rmtree(tmp, ignore_errors=True)
-
-    return all_ok
-
-
 def test_syntax():
     """测试 Python 语法"""
     print("\n" + "=" * 50)
@@ -270,8 +137,6 @@ def main():
         test_access_logger,
         test_file_structure,
         test_syntax,
-        test_control_feature,
-        test_result_feature,
     ]
     
     results = []
