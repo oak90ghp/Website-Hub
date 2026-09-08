@@ -12,11 +12,17 @@ python main.py
 
 ## 第二步：配置端口（可选）
 
-在管理界面中：
+在"服务器配置"中：
 - **网站端口**：默认 8000（可自定义）
 - **下载端口**：默认 7000（可自定义）
+- **远程控制**：点击后弹出二级菜单，管理远程控制相关设置
 
-> 💡 确保两个端口不相同且未被其他程序占用
+在"远程控制"弹出的二级菜单中：
+- **启用控制端口**：开关，默认开启，取消勾选后不启动操控服务与结果服务
+- **控制端口**：默认 9000（可自定义）
+- **回传端口**：默认 5000（可自定义）
+
+> 💡 确保已启用的端口互不相同且未被其他程序占用
 
 ## 第三步：启动服务
 
@@ -25,6 +31,7 @@ python main.py
 ```
 ✓ 网站服务已启动 (localhost:8000)
 ✓ 下载服务已启动 (localhost:7000)
+✓ 操控服务已启动 (localhost:9000)
 ✓ 所有服务启动成功！
 ```
 
@@ -69,6 +76,53 @@ request/download/
 <a href="http://localhost:7000/image.zip">下载图片</a>
 ```
 
+## 第七步：添加远程操控功能
+
+### 7.1 放置程序
+
+每个可被远程操控的程序占用 `request/control/` 下的一个子文件夹（文件夹名即调用名），文件夹中至少有两个文件：
+
+- 入口文件 `main`（后缀不限），例如 `main.exe`、`main.bat`、`main.py`
+- 配置文件 `WEBSTIEHUB_RUNNING_INFO.ini`（UTF-8 编码）
+
+```
+request/control/
+└── test.exe/
+    ├── main.bat
+    └── WEBSTIEHUB_RUNNING_INFO.ini
+```
+
+### 7.2 配置密码
+
+编辑 `WEBSTIEHUB_RUNNING_INFO.ini`：
+
+```ini
+NEED-PASSWORD=False
+```
+
+- `=False`：调用时不需要密码
+- `=任意密码`：调用时必须带上该密码
+
+### 7.3 远程调用
+
+| 场景 | 浏览器地址 |
+|------|-----------|
+| 无需密码 | `localhost:9000/test.exe` |
+| 密码为 7891dog.0 | `localhost:9000/test.exe&&password="7891dog.0"` |
+
+```html
+<a href="http://localhost:9000/test.exe">启动 test.exe</a>
+```
+
+### 7.4 获取运行结果
+
+操控服务运行程序时会捕获其终端输出（标准输出 + 标准错误），并通过**结果端口（默认 5000）**回传。结果不会显示在浏览器页面里，而是以纯文本返回。
+
+- 先触发运行：`localhost:9000/test.py`
+- 再读取结果：`localhost:5000/test.py`
+
+例如 `request/control/test.py/main.py` 中写了 `print("test")`，访问 `localhost:5000/test.py` 将收到 `test`。
+
 ## 📋 访问规则参考
 
 ### 规则 1：自动 index.html 映射
@@ -92,13 +146,28 @@ request/download/
 | `request/download/app.exe` | `localhost:7000/app.exe` |
 | `request/download/docs/file.pdf` | `localhost:7000/docs/file.pdf` |
 
+### 规则 4：远程操控程序
+
+| 文件位置 | 调用地址 |
+|---------|---------|
+| `request/control/test.exe/main.bat` | `localhost:9000/test.exe` |
+| `request/control/calc.exe/main.exe` | `localhost:9000/calc.exe&&password="密码"`（受密码保护时） |
+
+### 规则 5：运行结果回传
+
+| 文件位置 | 读取结果地址 |
+|---------|---------|
+| `request/control/test.py/main.py` | 先 `localhost:9000/test.py` 触发，再 `localhost:5000/test.py` 读取输出 |
+| `request/control/calc.exe/main.exe` | 先 `localhost:9000/calc.exe` 触发，再 `localhost:5000/calc.exe` 读取输出 |
+
 ## 🎮 管理界面操作
 
 ### 启动/停止服务
 
-- ✅ **启动服务**：点击按钮启动两个服务
+- ✅ **启动服务**：点击按钮启动已启用的服务（网站 + 下载，开启控制端口时再加上操控 + 结果）
 - ⏹️ **停止服务**：点击按钮停止所有服务
 - 🔄 **重启服务**：快速重新启动
+- 🎛️ **远程控制**：在"服务器配置"中点击该按钮，弹出二级菜单管理控制端口开关、控制端口与回传端口
 
 ### 查看访问记录
 
@@ -160,7 +229,12 @@ Cilent Website/
 ├── QUICKSTART.md        ← 本文件
 ├── index/               ← 网站文件夹（你的网页在这里）
 │   └── index.html       ← 示例主页
-└── request/download/    ← 下载文件夹（需要下载的文件在这里）
+└── request/
+    ├── download/        ← 下载文件夹（需要下载的文件在这里）
+    └── control/         ← 操控文件夹（可远程操控的程序在这里）
+        └── test.exe/
+            ├── main.txt
+            └── WEBSTIEHUB_RUNNING_INFO.ini
 ```
 
 ## 🎯 典型使用流程
@@ -180,19 +254,27 @@ Cilent Website/
    ↓
 7. 在 HTML 中添加下载链接
    ↓
-8. 查看"访问记录"了解用户活动
+8. 在 request/control/ 放置可操控程序
+   ↓
+9. 在浏览器中访问 http://localhost:9000/程序名 远程运行
+   ↓
+10. 访问 http://localhost:5000/程序名 获取终端运行结果
+   ↓
+11. 查看"访问记录"了解用户活动
 ```
 
 ## ✨ 功能特性
 
 - ✅ 图形化管理界面（无需命令行）
-- ✅ 双端口架构（网站 + 下载分离）
+- ✅ 四端口架构（网站 + 下载 + 操控 + 结果分离）
 - ✅ 自动 index.html 映射
 - ✅ 完整的访问日志
 - ✅ 一键启动/停止/重启
 - ✅ 自定义端口支持
 - ✅ 中文界面和日志
 - ✅ 路径安全防护
+- ✅ 远程操控本地程序（支持可选密码保护）
+- ✅ 运行结果回传（终端输出通过结果端口返回）
 
 ## 📞 需要帮助？
 
